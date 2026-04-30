@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Gerencia!</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <div class="logo">Gerencia!</div>
+            <div class="nav">
+                <a href="index.html" class="active">Dashboard</a>
+                <a href="lancamentos.html">Lancamentos</a>
+                <a href="relatorios.html">Relatorios</a>
+                <a href="#" onclick="logout(); return false;">Sair</a>
+            </div>
+        </div>
+
+        <div class="badge-container">
+            <span id="tipoContaBadge" class="badge">Carregando...</span>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Saldo Total</h3>
+                <div class="stat-value" id="saldoTotal">R$ 0,00</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total de Entradas</h3>
+                <div class="stat-value positive" id="totalEntradas">R$ 0,00</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total de Saidas</h3>
+                <div class="stat-value negative" id="totalSaidas">R$ 0,00</div>
+            </div>
+            <div class="stat-card">
+                <h3>Contas Ativas</h3>
+                <div class="stat-value" id="totalContas">0</div>
+            </div>
+            <div class="stat-card" id="margemLucro" style="display: none;">
+                <h3>Margem de Lucro</h3>
+                <div class="stat-value">0%</div>
+            </div>
+            <div class="stat-card" id="lucroLiquido" style="display: none;">
+                <h3>Lucro Liquido</h3>
+                <div class="stat-value">R$ 0,00</div>
+            </div>
+            <div class="stat-card" id="custosOperacionais" style="display: none;">
+                <h3>Custos Operacionais</h3>
+                <div class="stat-value">R$ 0,00</div>
+            </div>
+        </div>
+
+        <div class="charts-row">
+            <div class="stat-card">
+                <h3>Fluxo de Caixa</h3>
+                <div class="chart-container">
+                    <canvas id="graficoFluxo"></canvas>
+                </div>
+            </div>
+            <div class="stat-card">
+                <h3>Despesas por Categoria</h3>
+                <div class="chart-container">
+                    <canvas id="graficoCategorias"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <h3>Ultimas Movimentacoes</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Descricao</th>
+                        <th>Categoria</th>
+                        <th>Valor</th>
+                    </tr>
+                </thead>
+                <tbody id="ultimasMovimentacoes">
+                    <tr class="placeholder-row">
+                        <td colspan="4">Carregando...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

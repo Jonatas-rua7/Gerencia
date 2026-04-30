@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatorios | Gerencia!</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <div class="logo">Gerencia!</div>
+            <div class="nav">
+                <a href="index.html">Dashboard</a>
+                <a href="lancamentos.html">Lancamentos</a>
+                <a href="relatorios.html" class="active">Relatorios</a>
+                <a href="#" onclick="logout(); return false;">Sair</a>
+            </div>
+        </div>
+
+        <div class="filters-card">
+            <div class="filters-grid">
+                <div class="input-group">
+                    <label>Periodo</label>
+                    <select id="periodoRelatorio" onchange="mudarPeriodo()">
+                        <option value="mes">Este Mes</option>
+                        <option value="trimestre">Ultimo Trimestre</option>
+                        <option value="ano">Este Ano</option>
+                        <option value="custom">Personalizado</option>
+                    </select>
+                </div>
+                <div class="input-group" id="dataInicioGroup" style="display: none;">
+                    <label>Data Inicio</label>
+                    <input type="date" id="relatorioDataInicio">
+                </div>
+                <div class="input-group" id="dataFimGroup" style="display: none;">
+                    <label>Data Fim</label>
+                    <input type="date" id="relatorioDataFim">
+                </div>
+                <div class="action-group">
+                    <button class="btn-primary" onclick="atualizarRelatorios()">Atualizar</button>
+                    <button class="btn-secondary" onclick="exportarRelatorio()">Exportar CSV</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Total de Entradas</h3>
+                <div class="stat-value positive" id="relTotalEntradas">R$ 0,00</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total de Saidas</h3>
+                <div class="stat-value negative" id="relTotalSaidas">R$ 0,00</div>
+            </div>
+            <div class="stat-card">
+                <h3>Saldo do Periodo</h3>
+                <div class="stat-value" id="relSaldoPeriodo">R$ 0,00</div>
+            </div>
+            <div class="stat-card">
+                <h3>Media de Gastos</h3>
+                <div class="stat-value" id="relMediaGastos">R$ 0,00</div>
+            </div>
+        </div>
+
+        <div class="charts-row">
+            <div class="stat-card">
+                <h3>Evolucao Patrimonial</h3>
+                <div class="chart-container">
+                    <canvas id="graficoEvolucao"></canvas>
+                </div>
+            </div>
+            <div class="stat-card">
+                <h3>Gastos por Categoria</h3>
+                <div class="chart-container">
+                    <canvas id="graficoGastosCategoria"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <h3>Comparativo Mensal</h3>
+            <div class="chart-container-large">
+                <canvas id="graficoComparativo"></canvas>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <h3>Top 5 Maiores Despesas</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Descricao</th>
+                        <th>Categoria</th>
+                        <th>Valor</th>
+                    </tr>
+                </thead>
+                <tbody id="topDespesas">
+                    <tr class="placeholder-row">
+                        <td colspan="4">Carregando...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

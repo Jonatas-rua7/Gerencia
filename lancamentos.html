@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lancamentos | Gerencia!</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <div class="logo">Gerencia!</div>
+            <div class="nav">
+                <a href="index.html">Dashboard</a>
+                <a href="lancamentos.html" class="active">Lancamentos</a>
+                <a href="relatorios.html">Relatorios</a>
+                <a href="#" onclick="logout(); return false;">Sair</a>
+            </div>
+        </div>
+
+        <div class="action-bar">
+            <button class="btn-primary" onclick="abrirModalLancamento()">+ Novo Lancamento</button>
+        </div>
+
+        <div class="filters-card">
+            <div class="filters-grid">
+                <div class="input-group">
+                    <label>Tipo</label>
+                    <select id="filtroTipo" onchange="carregarLancamentos()">
+                        <option value="todos">Todos</option>
+                        <option value="entrada">Entradas</option>
+                        <option value="saida">Saidas</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Categoria</label>
+                    <select id="filtroCategoria" onchange="carregarLancamentos()">
+                        <option value="todas">Todas</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Data Inicio</label>
+                    <input type="date" id="filtroDataInicio" onchange="carregarLancamentos()">
+                </div>
+                <div class="input-group">
+                    <label>Data Fim</label>
+                    <input type="date" id="filtroDataFim" onchange="carregarLancamentos()">
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Descricao</th>
+                        <th>Categoria</th>
+                        <th>Conta</th>
+                        <th>Valor</th>
+                        <th>Acoes</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaLancamentos">
+                    <tr class="placeholder-row">
+                        <td colspan="6">Carregando...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="modalLancamento" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Novo Lancamento</h2>
+                <span class="close" onclick="fecharModalLancamento()">&times;</span>
+            </div>
+            <form id="formLancamento">
+                <div class="input-group">
+                    <label>Tipo</label>
+                    <select id="lancamentoTipo" onchange="atualizarCategorias()" required>
+                        <option value="entrada">Entrada (Receita)</option>
+                        <option value="saida">Saida (Despesa)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Descricao</label>
+                    <input type="text" id="lancamentoDescricao" required>
+                </div>
+                <div class="input-group">
+                    <label>Valor</label>
+                    <input type="number" id="lancamentoValor" step="0.01" required>
+                </div>
+                <div class="input-group">
+                    <label>Data</label>
+                    <input type="date" id="lancamentoData" required>
+                </div>
+                <div class="input-group">
+                    <label>Categoria</label>
+                    <select id="lancamentoCategoria" required>
+                        <option value="">Selecione uma categoria</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Conta</label>
+                    <select id="lancamentoConta" required>
+                        <option value="">Selecione uma conta</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Observacao</label>
+                    <textarea id="lancamentoObs" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn-primary">Salvar Lancamento</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
