@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações | Gerencia!</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="appRoot"></div>
+
+<script type="module">
+import { SIDEBAR_HTML, TOPBAR_HTML, LOADING_HTML, inicializarLayout } from './js/layout.js';
+import { listarContas, criarConta, editarConta, excluirConta, listarCategorias, criarCategoria, editarCategoria, excluirCategoria, atualizarPerfil, alterarSenha, alterarEmail } from './js/db.js';
+import { aplicarTema, carregarTema, toast, escaparHtml } from './js/utils.js';
+
+document.getElementById('appRoot').innerHTML = `
+    ${LOADING_HTML}
+    <div class="app-layout">
+        ${SIDEBAR_HTML}
+        ${TOPBAR_HTML}
+        <main class="main-content fade-in" id="mainContent" style="display:none"></main>
+    </div>
+`;
+
+let perfil, contas=[], categorias=[];
+
+inicializarLayout(async (p) => {
+    perfil = p;
+    [contas, categorias] = await Promise.all([
+        listarContas(p.uid),
+        listarCategorias(p.uid)
+    ]);
+
+    document.getElementById('mainContent').innerHTML = `
+        <div class="settings-layout">
+            <!-- Nav lateral -->
+            <div class="settings-nav">
+                <button class="settings-nav-item active" onclick="showSection('perfil', this)">
+                    👤 Perfil
+                </button>
+                <button class="settings-nav-item" onclick="showSection('seguranca', this)">
+                    🔒 Segurança
+                </button>
+                <button class="settings-nav-item" onclick="showSection('contas', this)">
+                    🏦 Contas Bancárias
+                </button>
+                <button class="settings-nav-item" onclick="showSection('categorias', this)">
+                    🏷️ Categorias
+                </button>
+                <button class="settings-nav-item" onclick="showSection('aparencia', this)">
+                    🎨 Aparência
+                </button>
+            </div>
+
+            <!-- Conteúdo -->
+            <div id="settingsContent">
+                <!-- PERFIL -->
+                <div class="settings-section active" id="sec-perfil">
+                    <h2 class="settings-section-title">Seu Perfil</h2>
+                    <p class="settings-section-desc">Edite suas informações pessoais</p>
+                    <div class="settings-card">
+                        <div id="alertaPerfil" class="alert"></div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Nome completo</label>
+                                <input type="text" id="pNome" value="${escaparHtml(perfil.nome||'')}">
+                            </div>
+                            <div class="form-group">
+                                <label>Tipo de conta</label>
+                                <input type="text" value="${perfil.tipo==='PJ'?'Pessoa Jurídica':'Pessoa Física'}" disabled style="opacity:0.6;cursor:not-allowed">
+                            </div>
+                        </div>
+                        ${perfil.tipo==='PJ' ? `
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Razão Social</label>
+                                <input type="text" id="pRazao" value="${escaparHtml(perfil.razaoSocial||'')}">
+                            </div>
+                            <div class="form-group">
+                                <label>Nome Fantasia</label>
+                                <input type="text" id="pFantasia" value="${escaparHtml(perfil.nomeFantasia||'')}">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Inscrição Estadual</label>
+                            <input type="text" id="pIE" value="${escaparHtml(perfil.inscricaoEstadual||'')}">
+                        </div>
+                        ` : ''}
+                        <button class="btn btn-primary" onclick="salvarPerfil()">Salvar alterações</button>
+                    </div>
+                </div>
+
+                <!-- SEGURANÇA -->
+                <div class="settings-section" id="sec-seguranca">
+                    <h2 class="settings-section-title">Segurança</h2>
+                    <p class="settings-section-desc">Altere e-mail e senha da sua conta</p>
+
+                    <div class="settings-card">
+                        <h3 style="font-family:var(--font-display);font-size:15px;font-weight:700;margin-bottom:16px">Alterar E-mail</h3>
+                        <div id="alertaEmail" class="alert"></div>
+                        <div class="form-group">
+                            <label>Novo e-mail</label>
+                            <input type="email" id="novoEmail" placeholder="novo@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Senha atual (para confirmar)</label>
+                            <input type="password" id="senhaEmail" placeholder="••••••••">
+                        </div>
+                        <button class="btn btn-primary" onclick="mudarEmail()">Alterar e-mail</button>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3 style="font-family:var(--font-display);font-size:15px;font-weight:700;margin-bottom:16px">Alterar Senha</h3>
+                        <div id="alertaSenha" class="alert"></div>
+                        <div class="form-group">
+                            <label>Senha atual</label>
+                            <input type="password" id="senhaAtual" placeholder="••••••••">
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Nova senha</label>
+                                <input type="password" id="novaSenha" placeholder="Mín. 6 caracteres">
+                            </div>
+                            <div class="form-group">
+                                <label>Confirmar nova senha</label>
+                                <input type="password" id="confirmarSenha" placeholder="Repita a senha">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="mudarSenha()">Alterar senha</button>
+                    </div>
+                </div>
+
+                <!-- CONTAS BANCÁRIAS -->
+                <div class="settings-section" id="sec-contas">
+                    <h2 class="settings-section-title">Contas Bancárias</h2>
+                    <p class="settings-section-desc">Gerencie suas contas para lançamentos</p>
+
+                    <div class="action-bar">
+                        <div></div>
+                        <button class="btn btn-primary" onclick="abrirModalConta()">
+                            + Nova conta
+                        </button>
+                    </div>
+
+                    <div id="listaContas"></div>
+                </div>
+
+                <!-- CATEGORIAS -->
+                <div class="settings-section" id="sec-categorias">
+                    <h2 class="settings-section-title">Categorias</h2>
+                    <p class="settings-section-desc">Personalize as categorias de receitas e despesas</p>
+
+                    <div class="action-bar">
+                        <div>
+                            <select id="filtroTipoCat" onchange="renderCategorias()" class="btn btn-secondary" style="font-size:14px;padding:8px 14px;cursor:pointer">
+                                <option value="todos">Todas</option>
+                                <option value="entrada">Entradas</option>
+                                <option value="saida">Saídas</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" onclick="abrirModalCategoria()">
+                            + Nova categoria
+                        </button>
+                    </div>
+
+                    <div id="listaCategorias"></div>
+                </div>
+
+                <!-- APARÊNCIA -->
+                <div class="settings-section" id="sec-aparencia">
+                    <h2 class="settings-section-title">Aparência</h2>
+                    <p class="settings-section-desc">Escolha o tema de cor do sistema</p>
+
+                    <div class="settings-card">
+                        <h3 style="font-family:var(--font-display);font-size:15px;font-weight:700;margin-bottom:16px">Tema de Cor</h3>
+                        <div class="theme-grid">
+                            <div class="theme-option ${carregarTema()==='roxo'?'selected':''}" onclick="selecionarTema('roxo', this)">
+                                <div class="theme-preview roxo">
+                                    <div class="theme-preview-sidebar"></div>
+                                    <div class="theme-preview-main">
+                                        <div class="theme-preview-card" style="border-top: 3px solid #7C3AED"></div>
+                                    </div>
+                                </div>
+                                <div class="theme-label">🟣 Roxo — Padrão</div>
+                            </div>
+                            <div class="theme-option ${carregarTema()==='oceano'?'selected':''}" onclick="selecionarTema('oceano', this)">
+                                <div class="theme-preview oceano">
+                                    <div class="theme-preview-sidebar"></div>
+                                    <div class="theme-preview-main">
+                                        <div class="theme-preview-card" style="border-top: 3px solid #0284C7"></div>
+                                    </div>
+                                </div>
+                                <div class="theme-label">🔵 Oceano</div>
+                            </div>
+                            <div class="theme-option ${carregarTema()==='esmeralda'?'selected':''}" onclick="selecionarTema('esmeralda', this)">
+                                <div class="theme-preview esmeralda">
+                                    <div class="theme-preview-sidebar"></div>
+                                    <div class="theme-preview-main">
+                                        <div class="theme-preview-card" style="border-top: 3px solid #059669"></div>
+                                    </div>
+                                </div>
+                                <div class="theme-label">🟢 Esmeralda</div>
+                            </div>
+                        </div>
+                        <p style="font-size:13px;color:var(--text-muted);margin-top:12px">
+                            O tema é salvo localmente neste dispositivo.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('mainContent').style.display = 'block';
+    renderContas();
+    renderCategorias();
+});
+
+// ======= NAVEGAÇÃO =======
+window.showSection = function(id, btn) {
+    document.querySelectorAll('.settings-section').forEach(s=>s.classList.remove('active'));
+    document.querySelectorAll('.settings-nav-item').forEach(b=>b.classList.remove('active'));
+    document.getElementById(`sec-${id}`).classList.add('active');
+    btn.classList.add('active');
+};
+
+// ======= PERFIL =======
+window.salvarPerfil = async function() {
+    const nome = document.getElementById('pNome').value.trim();
+    if (nome.length < 3) return toast('Nome muito curto.','warning');
+
+    const dados = { nome };
+    if (perfil.tipo==='PJ') {
+        dados.razaoSocial  = document.getElementById('pRazao').value.trim();
+        dados.nomeFantasia = document.getElementById('pFantasia').value.trim();
+        dados.inscricaoEstadual = document.getElementById('pIE').value.trim();
+    }
+
+    try {
+        await atualizarPerfil(perfil.uid, dados);
+        Object.assign(perfil, dados);
+        toast('Perfil atualizado!');
+        // Atualizar sidebar
+        document.getElementById('userName').textContent = nome.split(' ')[0];
+        if (perfil.tipo==='PJ') document.getElementById('userType').textContent = dados.nomeFantasia || 'Empresa';
+    } catch(e) { toast('Erro ao salvar perfil.','error'); }
+};
+
+// ======= SEGURANÇA =======
+window.mudarEmail = async function() {
+    const novoEmail = document.getElementById('novoEmail').value.trim();
+    const senha = document.getElementById('senhaEmail').value;
+    const alertEl = document.getElementById('alertaEmail');
+    alertEl.style.display='none';
+    if (!novoEmail || !senha) { alertEl.textContent='Preencha todos os campos.'; alertEl.className='alert alert-error'; alertEl.style.display='block'; return; }
+    try {
+        await alterarEmail(senha, novoEmail);
+        toast('E-mail alterado!');
+        document.getElementById('novoEmail').value='';
+        document.getElementById('senhaEmail').value='';
+    } catch(e) {
+        alertEl.textContent = e.code==='auth/wrong-password'?'Senha incorreta.':'Erro ao alterar e-mail.';
+        alertEl.className='alert alert-error'; alertEl.style.display='block';
+    }
+};
+
+window.mudarSenha = async function() {
+    const atual = document.getElementById('senhaAtual').value;
+    const nova  = document.getElementById('novaSenha').value;
+    const conf  = document.getElementById('confirmarSenha').value;
+    const alertEl = document.getElementById('alertaSenha');
+    alertEl.style.display='none';
+    if (!atual||!nova) { alertEl.textContent='Preencha todos os campos.'; alertEl.className='alert alert-error'; alertEl.style.display='block'; return; }
+    if (nova.length<6) { alertEl.textContent='Nova senha deve ter mínimo 6 caracteres.'; alertEl.className='alert alert-error'; alertEl.style.display='block'; return; }
+    if (nova!==conf)   { alertEl.textContent='Senhas não conferem.'; alertEl.className='alert alert-error'; alertEl.style.display='block'; return; }
+    try {
+        await alterarSenha(atual, nova);
+        toast('Senha alterada!');
+        document.getElementById('senhaAtual').value='';
+        document.getElementById('novaSenha').value='';
+        document.getElementById('confirmarSenha').value='';
+    } catch(e) {
+        alertEl.textContent = e.code==='auth/wrong-password'?'Senha atual incorreta.':'Erro ao alterar senha.';
+        alertEl.className='alert alert-error'; alertEl.style.display='block';
+    }
+};
+
+// ======= CONTAS =======
+function renderContas() {
+    const el = document.getElementById('listaContas');
+    if (!el) return;
+    el.innerHTML = contas.length===0
+        ? '<div class="settings-card" style="text-align:center;color:var(--text-muted);padding:32px">Nenhuma conta cadastrada</div>'
+        : contas.map(c=>`
+            <div class="settings-card" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;margin-bottom:10px">
+                <div>
+                    <div style="font-weight:600;color:var(--text-primary)">${escaparHtml(c.nome)}</div>
+                    <div style="font-size:13px;color:var(--text-muted)">Saldo inicial: R$ ${Number(c.saldoInicial||0).toFixed(2)}</div>
+                </div>
+                <div style="display:flex;gap:8px">
+                    <button class="btn btn-secondary btn-sm" onclick="editarContaUI('${c.id}','${escaparHtml(c.nome)}',${c.saldoInicial||0})">Editar</button>
+                    <button class="btn btn-danger btn-sm" onclick="deletarConta('${c.id}')">Excluir</button>
+                </div>
+            </div>
+        `).join('');
+}
+
+window.abrirModalConta = function(id='', nome='', saldoIni=0) {
+    const m = document.createElement('div');
+    m.className = 'modal-overlay open';
+    m.id = 'modalConta';
+    m.innerHTML = `
+        <div class="modal-box">
+            <div class="modal-header">
+                <span class="modal-title">${id?'Editar':'Nova'} Conta</span>
+                <button class="modal-close" onclick="document.getElementById('modalConta').remove()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group"><label>Nome da conta</label><input type="text" id="cNome" value="${nome}" placeholder="Ex: Conta Nubank"></div>
+                <div class="form-group"><label>Saldo inicial (R$)</label><input type="number" id="cSaldo" value="${saldoIni}" step="0.01"></div>
+                <button class="btn btn-primary btn-full" onclick="salvarConta('${id}')">Salvar</button>
+            </div>
+        </div>`;
+    document.body.appendChild(m);
+    m.addEventListener('click', e=>{ if(e.target===m) m.remove(); });
+};
+
+window.editarContaUI = (id, nome, saldo) => window.abrirModalConta(id, nome, saldo);
+
+window.salvarConta = async function(id) {
+    const nome  = document.getElementById('cNome').value.trim();
+    const saldo = Number(document.getElementById('cSaldo').value)||0;
+    if (nome.length<2) return toast('Nome muito curto.','warning');
+    try {
+        if (id) {
+            await editarConta(id, { nome, saldoInicial: saldo });
+            const c = contas.find(c=>c.id===id); if(c) { c.nome=nome; c.saldoInicial=saldo; }
+        } else {
+            const nova = await criarConta(perfil.uid, { nome, saldoInicial: saldo });
+            contas.push(nova);
+        }
+        document.getElementById('modalConta')?.remove();
+        renderContas();
+        toast('Conta salva!');
+    } catch(e) { toast('Erro ao salvar conta.','error'); }
+};
+
+window.deletarConta = async function(id) {
+    if (!confirm('Excluir esta conta? Lançamentos associados perderão a referência.')) return;
+    try {
+        await excluirConta(id);
+        contas = contas.filter(c=>c.id!==id);
+        renderContas();
+        toast('Conta excluída.');
+    } catch(e) { toast('Erro ao excluir.','error'); }
+};
+
+// ======= CATEGORIAS =======
+function renderCategorias() {
+    const el = document.getElementById('listaCategorias');
+    const filtro = document.getElementById('filtroTipoCat')?.value || 'todos';
+    if (!el) return;
+    const lista = filtro==='todos' ? categorias : categorias.filter(c=>c.tipo===filtro);
+    el.innerHTML = lista.length===0
+        ? '<div class="settings-card" style="text-align:center;color:var(--text-muted);padding:32px">Nenhuma categoria</div>'
+        : lista.map(c=>`
+            <div class="settings-card" style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;margin-bottom:8px">
+                <div style="display:flex;align-items:center;gap:12px">
+                    <div style="width:12px;height:12px;border-radius:50%;background:${c.cor||'#6B7280'};flex-shrink:0"></div>
+                    <div>
+                        <div style="font-weight:600;color:var(--text-primary)">${escaparHtml(c.nome)}</div>
+                        <div style="font-size:12px;color:var(--text-muted)">${c.tipo==='entrada'?'Entrada':'Saída'}${c.padrao?' · Padrão':''}</div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px">
+                    <button class="btn btn-secondary btn-sm" onclick="editarCatUI('${c.id}','${escaparHtml(c.nome)}','${c.tipo}','${c.cor||'#6B7280'}')">Editar</button>
+                    ${!c.padrao?`<button class="btn btn-danger btn-sm" onclick="deletarCat('${c.id}')">Excluir</button>`:''}
+                </div>
+            </div>
+        `).join('');
+}
+
+window.abrirModalCategoria = function(id='', nome='', tipo='saida', cor='#6B7280') {
+    const m = document.createElement('div');
+    m.className = 'modal-overlay open';
+    m.id = 'modalCategoria';
+    m.innerHTML = `
+        <div class="modal-box">
+            <div class="modal-header">
+                <span class="modal-title">${id?'Editar':'Nova'} Categoria</span>
+                <button class="modal-close" onclick="document.getElementById('modalCategoria').remove()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group"><label>Nome</label><input type="text" id="catNome" value="${nome}" placeholder="Ex: Academia"></div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Tipo</label>
+                        <select id="catTipo">
+                            <option value="entrada" ${tipo==='entrada'?'selected':''}>Entrada</option>
+                            <option value="saida" ${tipo==='saida'?'selected':''}>Saída</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Cor</label>
+                        <input type="color" id="catCor" value="${cor}" style="height:42px;cursor:pointer">
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-full" onclick="salvarCategoria('${id}')">Salvar</button>
+            </div>
+        </div>`;
+    document.body.appendChild(m);
+    m.addEventListener('click', e=>{ if(e.target===m) m.remove(); });
+};
+
+window.editarCatUI = (id,nome,tipo,cor) => window.abrirModalCategoria(id,nome,tipo,cor);
+
+window.salvarCategoria = async function(id) {
+    const nome = document.getElementById('catNome').value.trim();
+    const tipo = document.getElementById('catTipo').value;
+    const cor  = document.getElementById('catCor').value;
+    if (nome.length<2) return toast('Nome muito curto.','warning');
+    try {
+        if (id) {
+            await editarCategoria(id, { nome, tipo, cor });
+            const c = categorias.find(c=>c.id===id); if(c) { c.nome=nome; c.tipo=tipo; c.cor=cor; }
+        } else {
+            const nova = await criarCategoria(perfil.uid, { nome, tipo, cor });
+            categorias.push(nova);
+        }
+        document.getElementById('modalCategoria')?.remove();
+        renderCategorias();
+        toast('Categoria salva!');
+    } catch(e) { toast('Erro ao salvar categoria.','error'); }
+};
+
+window.deletarCat = async function(id) {
+    if (!confirm('Excluir esta categoria?')) return;
+    try {
+        await excluirCategoria(id);
+        categorias = categorias.filter(c=>c.id!==id);
+        renderCategorias();
+        toast('Categoria excluída.');
+    } catch(e) { toast('Erro ao excluir.','error'); }
+};
+
+// ======= TEMA =======
+window.selecionarTema = function(tema, el) {
+    document.querySelectorAll('.theme-option').forEach(o=>o.classList.remove('selected'));
+    el.classList.add('selected');
+    aplicarTema(tema);
+    toast(`Tema "${tema}" aplicado!`);
+};
+</script>
+</body>
+</html>

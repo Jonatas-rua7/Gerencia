@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatórios | Gerencia!</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="appRoot"></div>
+
+<script type="module">
+import { SIDEBAR_HTML, TOPBAR_HTML, LOADING_HTML, inicializarLayout } from './js/layout.js';
+import { listarLancamentos, listarContas, listarCategorias } from './js/db.js';
+import { formatarMoeda, formatarData, escaparHtml, parseNum, dataParaISO, criarDataLocal, listarMesesNoIntervalo, exportarCSV } from './js/utils.js';
+
+document.getElementById('appRoot').innerHTML = `
+    ${LOADING_HTML}
+    <div class="app-layout">
+        ${SIDEBAR_HTML}
+        ${TOPBAR_HTML}
+        <main class="main-content fade-in" id="mainContent" style="display:none"></main>
+    </div>
+`;
+
+let todosLancamentos=[], todasCategorias=[], todasContas=[], perfil;
+let graficos = {};
+let lancamentosAtuais = [];
+
+inicializarLayout(async (p) => {
+    perfil = p;
+    [todosLancamentos, todasContas, todasCategorias] = await Promise.all([
+        listarLancamentos(p.uid),
+        listarContas(p.uid),
+        listarCategorias(p.uid)
+    ]);
+
+    const hoje = new Date();
+    const ini  = dataParaISO(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
+    const fim  = dataParaISO(hoje);
+
+    document.getElementById('mainContent').innerHTML = `
+        <div class="filters-bar" style="margin-bottom:20px">
+            <div class="form-group">
+                <label>Período</label>
+                <select id="periodo" onchange="mudarPeriodo()">
+                    <option value="mes">Este mês</option>
+                    <option value="trimestre">Último trimestre</option>
+                    <option value="ano">Este ano</option>
+                    <option value="custom">Personalizado</option>
+                </select>
+            </div>
+            <div class="form-group" id="gInicio" style="display:none">
+                <label>Início</label>
+                <input type="date" id="relInicio" value="${ini}">
+            </div>
+            <div class="form-group" id="gFim" style="display:none">
+                <label>Fim</label>
+                <input type="date" id="relFim" value="${fim}">
+            </div>
+            <div class="form-group">
+                <label style="opacity:0">.</label>
+                <button class="btn btn-primary" onclick="atualizar()">Atualizar</button>
+            </div>
+            <div class="form-group">
+                <label style="opacity:0">.</label>
+                <button class="btn btn-secondary" onclick="exportar()">⬇ Exportar CSV</button>
+            </div>
+        </div>
+
+        <div class="stats-grid" id="statsRel"></div>
+
+        <div class="charts-grid">
+            <div class="card">
+                <div class="card-header"><span class="card-title">Evolução Patrimonial</span></div>
+                <div class="card-body"><div class="chart-container-lg"><canvas id="gEvolucao"></canvas></div></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><span class="card-title">Gastos por Categoria</span></div>
+                <div class="card-body"><div class="chart-container-lg"><canvas id="gGastosCat"></canvas></div></div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom:16px">
+            <div class="card-header"><span class="card-title">Comparativo Mensal</span></div>
+            <div class="card-body"><div class="chart-container-lg"><canvas id="gComparativo"></canvas></div></div>
+        </div>
+
+        <div class="table-wrap">
+            <div class="table-wrap-header"><span class="card-title">Top 5 Maiores Despesas</span></div>
+            <table>
+                <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th></tr></thead>
+                <tbody id="tbTop5"></tbody>
+            </table>
+        </div>
+    `;
+
+    document.getElementById('mainContent').style.display = 'block';
+    await atualizar();
+});
+
+window.mudarPeriodo = function() {
+    const p = document.getElementById('periodo').value;
+    document.getElementById('gInicio').style.display = p==='custom'?'block':'none';
+    document.getElementById('gFim').style.display    = p==='custom'?'block':'none';
+};
+
+function obterIntervalo() {
+    const periodo = document.getElementById('periodo').value;
+    const hoje = new Date();
+    let ini, fim;
+    if (periodo==='mes') { ini=new Date(hoje.getFullYear(),hoje.getMonth(),1); fim=hoje; }
+    else if (periodo==='trimestre') { ini=new Date(hoje.getFullYear(),hoje.getMonth()-2,1); fim=hoje; }
+    else if (periodo==='ano') { ini=new Date(hoje.getFullYear(),0,1); fim=hoje; }
+    else {
+        ini = criarDataLocal(document.getElementById('relInicio').value);
+        fim = criarDataLocal(document.getElementById('relFim').value);
+        if (!ini||!fim||ini>fim) return null;
+    }
+    return { ini: dataParaISO(ini), fim: dataParaISO(fim) };
+}
+
+window.atualizar = async function() {
+    const Chart = (await import("https://cdn.jsdelivr.net/npm/chart.js@4.4.0/auto/auto.esm.js")).default;
+
+    const iv = obterIntervalo();
+    if (!iv) return;
+
+    const catMap  = Object.fromEntries(todasCategorias.map(c=>[c.id,c]));
+    const contMap = Object.fromEntries(todasContas.map(c=>[c.id,c]));
+
+    lancamentosAtuais = todosLancamentos.filter(l=>l.data>=iv.ini && l.data<=iv.fim);
+    const lans = lancamentosAtuais;
+
+    const entradas = lans.filter(l=>l.tipo==='entrada').reduce((s,l)=>s+parseNum(l.valor),0);
+    const saidas   = lans.filter(l=>l.tipo==='saida').reduce((s,l)=>s+parseNum(l.valor),0);
+    const saldo    = entradas-saidas;
+    const meses    = listarMesesNoIntervalo(iv.ini,iv.fim);
+    const media    = saidas / (meses.length||1);
+
+    document.getElementById('statsRel').innerHTML = `
+        <div class="stat-card"><div class="stat-label">Entradas no Período</div><div class="stat-value positive">${formatarMoeda(entradas)}</div></div>
+        <div class="stat-card"><div class="stat-label">Saídas no Período</div><div class="stat-value negative">${formatarMoeda(saidas)}</div></div>
+        <div class="stat-card"><div class="stat-label">Saldo do Período</div><div class="stat-value ${saldo>=0?'positive':'negative'}">${formatarMoeda(saldo)}</div></div>
+        <div class="stat-card"><div class="stat-label">Média de Gastos/Mês</div><div class="stat-value">${formatarMoeda(media)}</div></div>
+    `;
+
+    // Destruir gráficos anteriores
+    Object.values(graficos).forEach(g=>g?.destroy());
+
+    // Evolução
+    const saldoMes = {};
+    lans.forEach(l=>{ const k=l.data.slice(0,7); saldoMes[k]=(saldoMes[k]||0)+(l.tipo==='entrada'?parseNum(l.valor):-parseNum(l.valor)); });
+    let ac=0;
+    graficos.evolucao = new Chart(document.getElementById('gEvolucao').getContext('2d'), {
+        type:'line',
+        data:{
+            labels: meses.map(m=>m.label),
+            datasets:[{
+                label:'Saldo Acumulado',
+                data: meses.map(m=>{ ac+=saldoMes[m.chave]||0; return ac; }),
+                borderColor:'var(--primary)',
+                backgroundColor:'rgba(124,58,237,0.1)',
+                fill:true, tension:0.35, pointRadius:4
+            }]
+        },
+        options:{ responsive:true, maintainAspectRatio:false }
+    });
+
+    // Gastos por categoria
+    const totCat={};
+    lans.filter(l=>l.tipo==='saida').forEach(l=>{ totCat[l.categoriaId]=(totCat[l.categoriaId]||0)+parseNum(l.valor); });
+    const top=Object.entries(totCat).sort((a,b)=>b[1]-a[1]).slice(0,7);
+    graficos.categ = new Chart(document.getElementById('gGastosCat').getContext('2d'), {
+        type:'doughnut',
+        data:{
+            labels: top.length?top.map(([id])=>catMap[id]?.nome||'Outros'):['Sem dados'],
+            datasets:[{ data:top.length?top.map(([,v])=>v):[1], backgroundColor:top.length?top.map(([id])=>catMap[id]?.cor||'#6B7280'):['#E5E7EB'] }]
+        },
+        options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right'}} }
+    });
+
+    // Comparativo
+    const entM={},saiM={};
+    lans.forEach(l=>{ const k=l.data.slice(0,7); if(l.tipo==='entrada') entM[k]=(entM[k]||0)+parseNum(l.valor); else saiM[k]=(saiM[k]||0)+parseNum(l.valor); });
+    graficos.comp = new Chart(document.getElementById('gComparativo').getContext('2d'), {
+        type:'bar',
+        data:{
+            labels:meses.map(m=>m.label),
+            datasets:[
+                { label:'Entradas', data:meses.map(m=>entM[m.chave]||0), backgroundColor:'#10B981', borderRadius:6 },
+                { label:'Saídas',   data:meses.map(m=>saiM[m.chave]||0), backgroundColor:'#EF4444', borderRadius:6 }
+            ]
+        },
+        options:{ responsive:true, maintainAspectRatio:false, scales:{x:{grid:{display:false}}} }
+    });
+
+    // Top 5
+    const top5 = lans.filter(l=>l.tipo==='saida').sort((a,b)=>b.valor-a.valor).slice(0,5);
+    document.getElementById('tbTop5').innerHTML = top5.length===0
+        ? '<tr class="placeholder-row"><td colspan="4">Nenhuma despesa no período</td></tr>'
+        : top5.map(l=>`<tr>
+            <td>${formatarData(l.data)}</td>
+            <td class="td-main">${escaparHtml(l.descricao)}</td>
+            <td><span class="tag" style="background:${catMap[l.categoriaId]?.cor||'#6B7280'}18;color:${catMap[l.categoriaId]?.cor||'#6B7280'}">${escaparHtml(catMap[l.categoriaId]?.nome||'—')}</span></td>
+            <td class="val-saida">-${formatarMoeda(l.valor)}</td>
+        </tr>`).join('');
+};
+
+window.exportar = function() {
+    const catMap  = Object.fromEntries(todasCategorias.map(c=>[c.id,c]));
+    const contMap = Object.fromEntries(todasContas.map(c=>[c.id,c]));
+    exportarCSV(lancamentosAtuais, catMap, contMap, `relatorio_${perfil.tipo==='PJ'?'empresarial':'pessoal'}_${dataParaISO(new Date())}.csv`);
+};
+</script>
+</body>
+</html>

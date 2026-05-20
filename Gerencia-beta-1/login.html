@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Gerencia!</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="auth-page">
+
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-logo">
+            <h1>Gerencia!</h1>
+            <p>Gerencie suas finanças com inteligência</p>
+        </div>
+
+        <div id="alertaLogin" class="alert"></div>
+
+        <div class="form-group">
+            <label>E-mail</label>
+            <input type="email" id="email" placeholder="seu@email.com" autocomplete="email">
+        </div>
+
+        <div class="form-group">
+            <label>Senha</label>
+            <input type="password" id="senha" placeholder="••••••••" autocomplete="current-password">
+        </div>
+
+        <button class="btn btn-primary btn-full btn-lg" id="btnLogin" style="margin-top: 8px;">
+            Entrar
+        </button>
+
+        <div class="auth-footer">
+            Não tem conta? <a href="cadastro.html">Cadastre-se grátis</a>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { carregarTema, mostrarAlerta, esconderAlerta } from './js/utils.js';
+    import { login, usuarioAtual } from './js/db.js';
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { auth } from './js/firebase-config.js';
+
+    carregarTema();
+
+    // Se já logado, redireciona
+    onAuthStateChanged(auth, user => {
+        if (user) window.location.href = 'index.html';
+    });
+
+    document.getElementById('btnLogin').addEventListener('click', async () => {
+        const email = document.getElementById('email').value.trim();
+        const senha = document.getElementById('senha').value;
+        esconderAlerta('alertaLogin');
+
+        if (!email || !senha) {
+            mostrarAlerta('alertaLogin', 'Informe e-mail e senha.');
+            return;
+        }
+
+        const btn = document.getElementById('btnLogin');
+        btn.textContent = 'Entrando...';
+        btn.disabled = true;
+
+        try {
+            await login(email, senha);
+            window.location.href = 'index.html';
+        } catch (e) {
+            const msg = e.message.includes('bloqueada') ? e.message :
+                        e.code === 'auth/invalid-credential' ? 'E-mail ou senha inválidos.' :
+                        e.code === 'auth/too-many-requests' ? 'Muitas tentativas. Tente mais tarde.' :
+                        'Erro ao fazer login. Tente novamente.';
+            mostrarAlerta('alertaLogin', msg);
+            btn.textContent = 'Entrar';
+            btn.disabled = false;
+        }
+    });
+
+    // Enter no campo de senha
+    document.getElementById('senha').addEventListener('keydown', e => {
+        if (e.key === 'Enter') document.getElementById('btnLogin').click();
+    });
+</script>
+</body>
+</html>

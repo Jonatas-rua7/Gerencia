@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Gerencia!</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="appRoot"></div>
+
+<script type="module">
+import { SIDEBAR_HTML, TOPBAR_HTML, LOADING_HTML, inicializarLayout } from './js/layout.js';
+import { listarLancamentos, listarContas, listarCategorias } from './js/db.js';
+import { formatarMoeda, formatarData, escaparHtml, parseNum, montarUltimosMeses, MESES } from './js/utils.js';
+
+// Injetar estrutura
+document.getElementById('appRoot').innerHTML = `
+    ${LOADING_HTML}
+    <div class="app-layout">
+        ${SIDEBAR_HTML}
+        ${TOPBAR_HTML}
+        <main class="main-content fade-in" id="mainContent" style="display:none"></main>
+    </div>
+`;
+
+let graficos = {};
+
+inicializarLayout(async (perfil) => {
+    const [lancamentos, contas, categorias] = await Promise.all([
+        listarLancamentos(perfil.uid),
+        listarContas(perfil.uid),
+        listarCategorias(perfil.uid)
+    ]);
+
+    const catMap = Object.fromEntries(categorias.map(c => [c.id, c]));
+
+    // Métricas
+    const entradas = lancamentos.filter(l=>l.tipo==='entrada').reduce((s,l)=>s+parseNum(l.valor),0);
+    const saidas   = lancamentos.filter(l=>l.tipo==='saida').reduce((s,l)=>s+parseNum(l.valor),0);
+    const saldo    = entradas - saidas;
+    const margem   = entradas > 0 ? ((saldo/entradas)*100).toFixed(1) : 0;
+
+    const saldoContas = contas.reduce((acc,c)=>{
+        const mvs = lancamentos.filter(l=>l.contaId===c.id);
+        const e = mvs.filter(l=>l.tipo==='entrada').reduce((s,l)=>s+parseNum(l.valor),0);
+        const s2 = mvs.filter(l=>l.tipo==='saida').reduce((s,l)=>s+parseNum(l.valor),0);
+        return acc + parseNum(c.saldoInicial) + e - s2;
+    }, 0);
+
+    const isPJ = perfil.tipo === 'PJ';
+
+    document.getElementById('mainContent').innerHTML = `
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Saldo Total
+                </div>
+                <div class="stat-value ${saldoContas >= 0 ? 'positive' : 'negative'}">${formatarMoeda(saldoContas)}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"/></svg>
+                    Total de Entradas
+                </div>
+                <div class="stat-value positive">${formatarMoeda(entradas)}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6"/></svg>
+                    Total de Saídas
+                </div>
+                <div class="stat-value negative">${formatarMoeda(saidas)}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
+                    Contas Ativas
+                </div>
+                <div class="stat-value primary">${contas.length}</div>
+            </div>
+            ${isPJ ? `
+            <div class="stat-card">
+                <div class="stat-label">📈 Margem de Lucro</div>
+                <div class="stat-value ${margem >= 20 ? 'positive' : margem >= 10 ? 'warning' : 'negative'}">${margem}%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">💰 Lucro Líquido</div>
+                <div class="stat-value ${saldo >= 0 ? 'positive' : 'negative'}">${formatarMoeda(saldo)}</div>
+            </div>
+            ` : ''}
+        </div>
+
+        <div class="charts-grid">
+            <div class="card">
+                <div class="card-header"><span class="card-title">Fluxo de Caixa — 6 meses</span></div>
+                <div class="card-body">
+                    <div class="chart-container"><canvas id="graficoFluxo"></canvas></div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><span class="card-title">Despesas por Categoria</span></div>
+                <div class="card-body">
+                    <div class="chart-container"><canvas id="graficoCategorias"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <div class="table-wrap-header">
+                <span class="card-title">Últimas Movimentações</span>
+                <a href="lancamentos.html" class="btn btn-secondary btn-sm">Ver todas</a>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th>
+                    </tr>
+                </thead>
+                <tbody id="tbUltimas"></tbody>
+            </table>
+        </div>
+    `;
+
+    document.getElementById('mainContent').style.display = 'block';
+
+    // Últimas movimentações
+    const ultimas = [...lancamentos].sort((a,b)=>(b.data||'').localeCompare(a.data||'')).slice(0,8);
+    document.getElementById('tbUltimas').innerHTML = ultimas.length === 0
+        ? '<tr class="placeholder-row"><td colspan="4">Nenhuma movimentação cadastrada</td></tr>'
+        : ultimas.map(l => {
+            const cat = catMap[l.categoriaId];
+            return `<tr>
+                <td>${formatarData(l.data)}</td>
+                <td class="td-main">${escaparHtml(l.descricao)}</td>
+                <td><span class="tag" style="background:${cat?.cor||'#6B7280'}20;color:${cat?.cor||'#6B7280'}">${escaparHtml(cat?.nome||'Sem categoria')}</span></td>
+                <td class="${l.tipo==='entrada'?'val-entrada':'val-saida'}">${l.tipo==='entrada'?'+':'-'}${formatarMoeda(l.valor)}</td>
+            </tr>`;
+        }).join('');
+
+    // Gráficos
+    const Chart = (await import("https://cdn.jsdelivr.net/npm/chart.js@4.4.0/auto/auto.esm.js")).default;
+
+    const meses = montarUltimosMeses(6);
+    const entMes = {}, saiMes = {};
+    lancamentos.forEach(l => {
+        const k = l.data?.slice(0,7);
+        if (l.tipo==='entrada') entMes[k] = (entMes[k]||0) + parseNum(l.valor);
+        else saiMes[k] = (saiMes[k]||0) + parseNum(l.valor);
+    });
+
+    new Chart(document.getElementById('graficoFluxo').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: meses.map(m=>m.label),
+            datasets: [
+                { label: 'Entradas', data: meses.map(m=>entMes[m.chave]||0), backgroundColor: '#10B981', borderRadius: 6 },
+                { label: 'Saídas',   data: meses.map(m=>saiMes[m.chave]||0), backgroundColor: '#EF4444', borderRadius: 6 }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'top' } },
+            scales: { x: { grid: { display: false } } }
+        }
+    });
+
+    const totCat = {};
+    lancamentos.filter(l=>l.tipo==='saida').forEach(l=>{
+        totCat[l.categoriaId] = (totCat[l.categoriaId]||0)+parseNum(l.valor);
+    });
+    const topCat = Object.entries(totCat).sort((a,b)=>b[1]-a[1]).slice(0,6);
+
+    new Chart(document.getElementById('graficoCategorias').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: topCat.length ? topCat.map(([id])=>catMap[id]?.nome||'Outros') : ['Sem dados'],
+            datasets: [{ data: topCat.length ? topCat.map(([,v])=>v) : [1], backgroundColor: topCat.length ? topCat.map(([id])=>catMap[id]?.cor||'#6B7280') : ['#E5E7EB'] }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+    });
+});
+</script>
+</body>
+</html>

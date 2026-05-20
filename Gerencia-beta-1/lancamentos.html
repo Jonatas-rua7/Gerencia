@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lançamentos | Gerencia!</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="appRoot"></div>
+
+<script type="module">
+import { SIDEBAR_HTML, TOPBAR_HTML, LOADING_HTML, inicializarLayout } from './js/layout.js';
+import { listarLancamentos, listarContas, listarCategorias, criarLancamento, excluirLancamento } from './js/db.js';
+import { formatarMoeda, formatarData, escaparHtml, parseNum, dataParaISO, toast } from './js/utils.js';
+
+document.getElementById('appRoot').innerHTML = `
+    ${LOADING_HTML}
+    <div class="app-layout">
+        ${SIDEBAR_HTML}
+        ${TOPBAR_HTML}
+        <main class="main-content fade-in" id="mainContent" style="display:none"></main>
+    </div>
+
+    <!-- Modal Lançamento -->
+    <div class="modal-overlay" id="modalLancamento">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span class="modal-title">Novo Lançamento</span>
+                <button class="modal-close" onclick="fecharModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="alertaLanc" class="alert"></div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Tipo</label>
+                        <select id="lTipo" onchange="atualizarCats()">
+                            <option value="entrada">Entrada (Receita)</option>
+                            <option value="saida">Saída (Despesa)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Data</label>
+                        <input type="date" id="lData">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <input type="text" id="lDescricao" placeholder="Ex: Salário março">
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Valor (R$)</label>
+                        <input type="number" id="lValor" step="0.01" min="0" placeholder="0,00">
+                    </div>
+                    <div class="form-group">
+                        <label>Conta</label>
+                        <select id="lConta"><option value="">Selecione</option></select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <select id="lCategoria"><option value="">Selecione</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Observação <small style="color:var(--text-muted)">(opcional)</small></label>
+                    <textarea id="lObs" rows="2" placeholder="Informações adicionais..."></textarea>
+                </div>
+                <button class="btn btn-primary btn-full" id="btnSalvarLanc">Salvar Lançamento</button>
+            </div>
+        </div>
+    </div>
+`;
+
+let todosLancamentos = [], todasCategorias = [], todasContas = [], perfil;
+
+inicializarLayout(async (p) => {
+    perfil = p;
+    [todosLancamentos, todasContas, todasCategorias] = await Promise.all([
+        listarLancamentos(p.uid),
+        listarContas(p.uid),
+        listarCategorias(p.uid)
+    ]);
+
+    renderizarPagina();
+    document.getElementById('mainContent').style.display = 'block';
+});
+
+function renderizarPagina() {
+    const catMap = Object.fromEntries(todasCategorias.map(c=>[c.id,c]));
+    const contMap = Object.fromEntries(todasContas.map(c=>[c.id,c]));
+
+    document.getElementById('mainContent').innerHTML = `
+        <div class="action-bar">
+            <div class="action-bar-left">
+                <h2 style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--text-primary)">
+                    Seus Lançamentos
+                </h2>
+            </div>
+            <div class="action-bar-right">
+                <button class="btn btn-primary" onclick="abrirModal()">
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Novo Lançamento
+                </button>
+            </div>
+        </div>
+
+        <div class="filters-bar">
+            <div class="form-group">
+                <label>Tipo</label>
+                <select id="fTipo" onchange="filtrar()">
+                    <option value="todos">Todos</option>
+                    <option value="entrada">Entradas</option>
+                    <option value="saida">Saídas</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Categoria</label>
+                <select id="fCategoria" onchange="filtrar()">
+                    <option value="todas">Todas</option>
+                    ${todasCategorias.map(c=>`<option value="${c.id}">${escaparHtml(c.nome)}</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Data início</label>
+                <input type="date" id="fInicio" onchange="filtrar()">
+            </div>
+            <div class="form-group">
+                <label>Data fim</label>
+                <input type="date" id="fFim" onchange="filtrar()">
+            </div>
+            <div class="form-group">
+                <label style="opacity:0">.</label>
+                <button class="btn btn-secondary" onclick="limparFiltros()">Limpar</button>
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <div class="table-wrap-header">
+                <span class="card-title">Lista de Lançamentos</span>
+                <span id="countLanc" style="font-size:13px;color:var(--text-muted)"></span>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Conta</th><th>Valor</th><th>Ações</th></tr>
+                </thead>
+                <tbody id="tbLancamentos"></tbody>
+            </table>
+        </div>
+    `;
+
+    filtrar();
+}
+
+window.filtrar = function() {
+    const tipo = document.getElementById('fTipo')?.value || 'todos';
+    const cat  = document.getElementById('fCategoria')?.value || 'todas';
+    const ini  = document.getElementById('fInicio')?.value || '';
+    const fim  = document.getElementById('fFim')?.value || '';
+
+    const catMap  = Object.fromEntries(todasCategorias.map(c=>[c.id,c]));
+    const contMap = Object.fromEntries(todasContas.map(c=>[c.id,c]));
+
+    let lista = [...todosLancamentos].sort((a,b)=>(b.data||'').localeCompare(a.data||''));
+    if (tipo !== 'todos') lista = lista.filter(l=>l.tipo===tipo);
+    if (cat !== 'todas')  lista = lista.filter(l=>l.categoriaId===cat);
+    if (ini) lista = lista.filter(l=>l.data >= ini);
+    if (fim) lista = lista.filter(l=>l.data <= fim);
+
+    document.getElementById('countLanc').textContent = `${lista.length} lançamento${lista.length!==1?'s':''}`;
+
+    document.getElementById('tbLancamentos').innerHTML = lista.length === 0
+        ? '<tr class="placeholder-row"><td colspan="6">Nenhum lançamento encontrado</td></tr>'
+        : lista.map(l => {
+            const cat  = catMap[l.categoriaId];
+            const cont = contMap[l.contaId];
+            return `<tr>
+                <td>${formatarData(l.data)}</td>
+                <td class="td-main">${escaparHtml(l.descricao)}</td>
+                <td><span class="tag" style="background:${cat?.cor||'#6B7280'}18;color:${cat?.cor||'#6B7280'}">${escaparHtml(cat?.nome||'Sem categoria')}</span></td>
+                <td>${escaparHtml(cont?.nome||'—')}</td>
+                <td class="${l.tipo==='entrada'?'val-entrada':'val-saida'}">${l.tipo==='entrada'?'+':'-'}${formatarMoeda(l.valor)}</td>
+                <td>
+                    <button class="btn btn-danger btn-sm" onclick="deletarLanc('${l.id}')">Excluir</button>
+                </td>
+            </tr>`;
+        }).join('');
+};
+
+window.limparFiltros = function() {
+    document.getElementById('fTipo').value = 'todos';
+    document.getElementById('fCategoria').value = 'todas';
+    document.getElementById('fInicio').value = '';
+    document.getElementById('fFim').value = '';
+    filtrar();
+};
+
+window.deletarLanc = async function(id) {
+    if (!confirm('Excluir este lançamento?')) return;
+    try {
+        await excluirLancamento(id);
+        todosLancamentos = todosLancamentos.filter(l=>l.id!==id);
+        filtrar();
+        toast('Lançamento excluído.');
+    } catch(e) { toast('Erro ao excluir.','error'); }
+};
+
+// Modal
+window.abrirModal = function() {
+    preencherSelects();
+    document.getElementById('lData').value = dataParaISO(new Date());
+    document.getElementById('modalLancamento').classList.add('open');
+};
+
+window.fecharModal = function() {
+    document.getElementById('modalLancamento').classList.remove('open');
+    document.getElementById('lDescricao').value = '';
+    document.getElementById('lValor').value = '';
+    document.getElementById('lObs').value = '';
+};
+
+window.atualizarCats = function() { preencherSelects(); };
+
+function preencherSelects() {
+    const tipo = document.getElementById('lTipo')?.value || 'entrada';
+    const catsFiltradas = todasCategorias.filter(c=>c.tipo===tipo);
+    const selCat = document.getElementById('lCategoria');
+    selCat.innerHTML = '<option value="">Selecione</option>' +
+        catsFiltradas.map(c=>`<option value="${c.id}">${escaparHtml(c.nome)}</option>`).join('');
+    const selCont = document.getElementById('lConta');
+    selCont.innerHTML = '<option value="">Selecione</option>' +
+        todasContas.map(c=>`<option value="${c.id}">${escaparHtml(c.nome)}</option>`).join('');
+}
+
+document.getElementById('btnSalvarLanc').addEventListener('click', async () => {
+    const tipo     = document.getElementById('lTipo').value;
+    const descricao= document.getElementById('lDescricao').value.trim();
+    const valor    = parseNum(document.getElementById('lValor').value);
+    const data     = document.getElementById('lData').value;
+    const catId    = document.getElementById('lCategoria').value;
+    const contaId  = document.getElementById('lConta').value;
+    const obs      = document.getElementById('lObs').value.trim();
+
+    if (!descricao || !valor || valor<=0 || !data || !catId || !contaId) {
+        document.getElementById('alertaLanc').textContent = 'Preencha todos os campos obrigatórios.';
+        document.getElementById('alertaLanc').className = 'alert alert-error';
+        document.getElementById('alertaLanc').style.display = 'block';
+        return;
+    }
+
+    const btn = document.getElementById('btnSalvarLanc');
+    btn.textContent = 'Salvando...'; btn.disabled = true;
+
+    try {
+        const novoLanc = await criarLancamento(perfil.uid, { tipo, descricao, valor, data, categoriaId: catId, contaId, observacao: obs });
+        todosLancamentos.unshift(novoLanc);
+        fecharModal();
+        filtrar();
+        toast('Lançamento salvo!');
+    } catch(e) {
+        document.getElementById('alertaLanc').textContent = 'Erro ao salvar. Tente novamente.';
+        document.getElementById('alertaLanc').style.display = 'block';
+    } finally {
+        btn.textContent = 'Salvar Lançamento'; btn.disabled = false;
+    }
+});
+
+document.getElementById('modalLancamento').addEventListener('click', e => {
+    if (e.target === document.getElementById('modalLancamento')) fecharModal();
+});
+</script>
+</body>
+</html>
