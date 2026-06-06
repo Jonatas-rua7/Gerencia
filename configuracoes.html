@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configurações | Gerencia!</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+    <div class="main-wrap">
+      <header class="topbar">
+        <div class="page-title-row">
+          <button class="btn-menu" id="btnMenu" type="button">☰</button>
+          <h1>Configurações</h1>
+        </div>
+      </header>
+      <main class="main-content">
+        <div id="alertaConfig" class="alert"></div>
+        <div class="card">
+          <h3 class="card-title">Perfil</h3>
+          <form id="formPerfil">
+            <div class="input-group"><label>Nome</label><input type="text" id="nome" required></div>
+            <div class="input-group"><label>E-mail</label><input type="email" id="email" required></div>
+            <div class="input-group"><label>Modo de interface</label>
+              <select id="nivel_interface"><option value="simples">Simples</option><option value="avancado">Avançado</option></select>
+            </div>
+            <button type="submit" class="btn-primary">Salvar perfil</button>
+          </form>
+        </div>
+        <div class="card">
+          <h3 class="card-title" id="tituloAparencia">Aparência</h3>
+          <div class="theme-options">
+            <button type="button" class="theme-btn" data-tema="padrao">Padrão</button>
+            <button type="button" class="theme-btn" data-tema="escuro">Escuro</button>
+            <button type="button" class="theme-btn" data-tema="personalizado">Personalizado</button>
+            <button type="button" class="theme-btn hidden" data-tema="underground" id="opcaoUnderground">Underground</button>
+          </div>
+          <div id="coresPersonalizadas" style="margin-top:14px;display:none">
+            <div class="input-group"><label>Cor principal</label><input type="color" id="corPrincipal" value="#1F7A3A"></div>
+            <div class="input-group"><label>Cor destaque</label><input type="color" id="corDestaque" value="#D4A017"></div>
+          </div>
+          <button type="button" class="btn-sm hidden" id="btnMusicaUnderground" style="margin-top:12px">Música do tema Underground</button>
+        </div>
+        <div class="card">
+          <h3 class="card-title">Minha renda prevista</h3>
+          <p class="subtitle">Informe sua renda principal para gerar previsões na agenda financeira sem alterar o saldo até o momento do recebimento.</p>
+          <div id="alertaRendaPrevista" class="alert" style="display:none"></div>
+          <form id="formRendaPrevista" class="grid-form">
+            <div class="input-group">
+              <label>Tipo de renda</label>
+              <select id="tipoRenda" required>
+                <option value="">Tipo de renda</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label>Descrição</label>
+              <input type="text" id="descricaoRenda" placeholder="Descrição (ex: salário, mesada, pagamento por cliente)">
+            </div>
+            <div class="input-group">
+              <label>Valor médio</label>
+              <input type="number" id="valorRenda" placeholder="Valor médio recebido" step="0.01" required>
+            </div>
+            <div class="input-group">
+              <label>Frequência</label>
+              <select id="frequenciaRenda" required>
+                <option value="">Frequência</option>
+                <option value="unica">Única</option>
+                <option value="semanal">Semanal</option>
+                <option value="quinzenal">Quinzenal</option>
+                <option value="mensal">Mensal</option>
+                <option value="variavel">Variável</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label>Dia de recebimento</label>
+              <input type="number" id="diaRecebimento" placeholder="Dia previsto de recebimento (1-31)" min="1" max="31">
+            </div>
+            <div class="input-group">
+              <label>Conta / carteira</label>
+              <select id="contaRenda">
+                <option value="">Conta / carteira</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label>Criar previsão na agenda</label>
+              <select id="criarAgendaRenda" required>
+                <option value="">Criar previsão na agenda?</option>
+                <option value="true">Sim</option>
+                <option value="false">Não</option>
+              </select>
+            </div>
+            <button type="submit" class="btn-primary">Salvar renda prevista</button>
+          </form>
+        </div>
+        <div class="card">
+          <h3 class="card-title">Categorias</h3>
+          <p class="subtitle">Gerencie suas categorias personalizadas.</p>
+          <form id="formCategoria" class="grid-form">
+            <div class="input-group">
+              <label>Nome</label>
+              <input type="text" id="nomeCat" placeholder="Nome" required>
+            </div>
+            <div class="input-group">
+              <label>Tipo</label>
+              <select id="tipoCat"><option value="saida">Saída</option><option value="entrada">Entrada</option></select>
+            </div>
+            <div class="input-group">
+              <label>Cor</label>
+              <input type="color" id="corCat" value="#1F7A3A">
+            </div>
+            <button type="submit" class="btn-primary">Adicionar</button>
+          </form>
+          <div id="listaCategorias"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/secrets.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/configuracoes.js"></script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registrar | Gerencia!</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+    <div class="main-wrap">
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="btn-menu" id="btnMenu" type="button">☰</button>
+          <h1>Registrar</h1>
+        </div>
+      </header>
+      <main class="main-content">
+        <div class="tabs" id="tabsRegistrar">
+          <button type="button" class="tab-btn active" data-tipo="entrada">Entrada</button>
+          <button type="button" class="tab-btn" data-tipo="saida">Saída</button>
+          <button type="button" class="tab-btn" data-tipo="conta_pagar">Conta a pagar</button>
+          <button type="button" class="tab-btn" data-tipo="conta_receber">Conta a receber</button>
+          <button type="button" class="tab-btn" data-tipo="transferencia">Transferência</button>
+        </div>
+        <div class="card">
+          <div id="alertaRegistrar" class="alert"></div>
+          <form id="formRegistrar">
+            <div class="input-group">
+              <label>O que foi?</label>
+              <input type="text" id="oqueFoi" required placeholder="Ex.: Mercado, Uber, Salário...">
+              <small id="sugestaoCategoria" style="color:var(--verde);font-size:.8rem;display:none"></small>
+            </div>
+            <div class="input-group" id="grupoValor"><label>Valor (R$)</label><input type="number" id="valor" step="0.01" min="0.01" required></div>
+            <div class="input-group" id="grupoData"><label id="labelData">Data</label><input type="date" id="data" required></div>
+            <div class="input-group" id="grupoConta"><label>Conta / carteira</label><select id="conta_id"></select></div>
+            <div class="input-group" id="grupoContaDestino" style="display:none"><label>Conta destino</label><select id="conta_destino_id"></select></div>
+            <div class="input-group" id="grupoCategorias">
+              <label>Categoria (opcional)</label>
+              <div class="chip-row" id="chipsCategoria"></div>
+              <input type="hidden" id="categoria_id">
+            </div>
+            <details style="margin-bottom:14px"><summary style="cursor:pointer;color:var(--text-muted)">Detalhes adicionais</summary>
+              <div class="input-group" style="margin-top:10px"><label>Observação</label><textarea id="observacao" rows="2"></textarea></div>
+              <div class="input-group" id="grupoRecorrencia" style="display:none">
+                <label>Repetir</label>
+                <select id="frequencia"><option value="nenhuma">Não repetir</option><option value="semanal">Semanal</option><option value="quinzenal">Quinzenal</option><option value="mensal">Mensal</option><option value="anual">Anual</option></select>
+              </div>
+            </details>
+            <button type="submit" class="btn-primary">Salvar</button>
+          </form>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/secrets.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/registrar.js"></script>
+</body>
+</html>

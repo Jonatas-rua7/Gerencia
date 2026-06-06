@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clientes | Gerencia!</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+    <div class="main-wrap">
+      <header class="topbar">
+        <div class="page-title-row">
+          <button class="btn-menu" id="btnMenu" type="button">☰</button>
+          <div>
+            <h1 id="tituloClientes">Clientes e serviços</h1>
+            <p id="descricaoClientes" class="subtitle">Registre clientes, contratos e situação financeira.</p>
+          </div>
+        </div>
+      </header>
+      <main class="main-content">
+        <div id="alertaClientes" class="alert" style="display:none"></div>
+        <div class="card">
+          <h3 class="card-title">Clientes</h3>
+          <form id="formCliente" class="grid-form">
+            <input type="text" id="nomeCliente" placeholder="Nome" required>
+            <input type="text" id="telefoneCliente" placeholder="Telefone / WhatsApp">
+            <input type="email" id="emailCliente" placeholder="E-mail">
+            <input type="text" id="documentoCliente" placeholder="Documento (CPF/CNPJ)">
+            <select id="tipoCliente" required>
+              <option value="">Tipo de cliente</option>
+              <option value="regular">Regular</option>
+              <option value="novo">Novo</option>
+              <option value="recorrente">Recorrente</option>
+              <option value="prospecção">Prospecção</option>
+              <option value="outro">Outro</option>
+            </select>
+            <textarea id="observacaoCliente" placeholder="Observações" rows="2"></textarea>
+            <button type="submit" class="btn-primary">Salvar cliente</button>
+          </form>
+          <div class="table-wrap"><table><thead><tr><th>Nome</th><th>Contato</th><th>Documento</th><th>Tipo</th><th>Observações</th><th>Ações</th></tr></thead><tbody id="tabelaClientes"></tbody></table></div>
+        </div>
+
+        <div class="card" id="cardServicos">
+          <h3 class="card-title">Serviços / Contratos</h3>
+          <form id="formServico" class="grid-form">
+            <input type="text" id="nomeServico" placeholder="Serviço ou produto" required>
+            <select id="tipoServico" required>
+              <option value="">Tipo de serviço</option>
+            </select>
+            <select id="clienteServico" required>
+              <option value="">Cliente</option>
+            </select>
+            <input type="number" id="valorServico" placeholder="Valor combinado" step="0.01" required>
+            <select id="statusServico" required>
+              <option value="">Status do serviço</option>
+              <option value="ativo">Ativo</option>
+              <option value="pendente">Pendente</option>
+              <option value="concluido">Concluído</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+            <select id="situacaoServico" required>
+              <option value="">Situação financeira</option>
+              <option value="nada_pendente">Nada pendente</option>
+              <option value="a_receber">A receber</option>
+              <option value="pago_parcialmente">Pago parcialmente</option>
+              <option value="pago">Pago</option>
+              <option value="atrasado">Atrasado</option>
+            </select>
+            <textarea id="observacaoServico" placeholder="Observações do serviço" rows="2"></textarea>
+            <button type="submit" class="btn-primary">Salvar serviço</button>
+          </form>
+          <div class="table-wrap"><table><thead><tr><th>Serviço</th><th>Tipo</th><th>Cliente</th><th>Valor</th><th>Status</th><th>Situação</th><th>Ações</th></tr></thead><tbody id="tabelaServicos"></tbody></table></div>
+        </div>
+
+        <div class="card" id="cardFornecedores" style="display:none">
+          <h3 class="card-title">Fornecedores</h3>
+          <form id="formFornecedor" class="grid-form">
+            <input type="text" id="nomeFornecedor" placeholder="Nome" required>
+            <input type="text" id="contatoFornecedor" placeholder="Contato">
+            <input type="text" id="documentoFornecedor" placeholder="Documento (CNPJ)">
+            <textarea id="observacaoFornecedor" placeholder="Observações" rows="2"></textarea>
+            <button type="submit" class="btn-primary">Salvar fornecedor</button>
+          </form>
+          <div class="table-wrap"><table><thead><tr><th>Nome</th><th>Contato</th><th>Documento</th><th>Observações</th><th>Ações</th></tr></thead><tbody id="tabelaFornecedores"></tbody></table></div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/secrets.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/clientes.js"></script>
+</body>
+</html>

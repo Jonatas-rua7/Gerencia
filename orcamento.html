@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orçamento | Gerencia!</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+    <div class="main-wrap">
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="btn-menu" id="btnMenu" type="button">☰</button>
+          <h1>Orçamento mensal</h1>
+        </div>
+      </header>
+      <main class="main-content">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <div style="display:flex;gap:8px;align-items:center">
+              <select id="mesOrcamento" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border)">
+                <option value="1">Janeiro</option>
+                <option value="2">Fevereiro</option>
+                <option value="3">Março</option>
+                <option value="4">Abril</option>
+                <option value="5">Maio</option>
+                <option value="6">Junho</option>
+                <option value="7">Julho</option>
+                <option value="8">Agosto</option>
+                <option value="9">Setembro</option>
+                <option value="10">Outubro</option>
+                <option value="11">Novembro</option>
+                <option value="12">Dezembro</option>
+              </select>
+              <select id="anoOrcamento" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border)">
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+                <option value="2026">2026</option>
+              </select>
+            </div>
+            <button class="btn-primary" id="btnDefinirLimites">Definir limites</button>
+          </div>
+          <div id="alertaOrcamento" class="alert" style="display:none;margin-bottom:16px"></div>
+          <div id="gridOrcamentos" class="stats-grid"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="modalLimites" class="modal" style="display:none">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Definir limites por categoria</h3>
+        <button class="btn-ghost" id="fecharModalLimites">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="listaCategoriasLimites"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" id="salvarLimites">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/secrets.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/orcamento.js"></script>
+</body>
+</html>

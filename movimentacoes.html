@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Movimentações | Gerencia!</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+    <div class="main-wrap">
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="btn-menu" id="btnMenu" type="button">☰</button>
+          <h1 id="tituloPagina">Movimentações</h1>
+        </div>
+        <a href="registrar.html" class="btn-primary" style="text-decoration:none">+ Registrar</a>
+      </header>
+      <main class="main-content">
+        <p style="color:var(--text-muted);margin-bottom:16px;font-size:.9rem">Apenas dinheiro que <strong>realmente entrou ou saiu</strong>. Previsões ficam na Agenda.</p>
+        <div class="card filters-card">
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">
+            <div class="input-group" style="margin:0"><label>Tipo</label><select id="filtroTipo"><option value="">Todos</option><option value="entrada">Entrada</option><option value="saida">Saída</option></select></div>
+            <div class="input-group" style="margin:0"><label>De</label><input type="date" id="dataInicio"></div>
+            <div class="input-group" style="margin:0"><label>Até</label><input type="date" id="dataFim"></div>
+            <button type="button" class="btn-secondary" id="btnFiltrar">Filtrar</button>
+          </div>
+        </div>
+        <div class="card"><div class="table-wrap"><table>
+          <thead><tr><th>Data</th><th>O que foi</th><th>Categoria</th><th>Conta</th><th>Valor</th><th></th></tr></thead>
+          <tbody id="tabela"></tbody>
+        </table></div></div>
+      </main>
+    </div>
+  </div>
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/secrets.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/movimentacoes.js"></script>
+</body>
+</html>

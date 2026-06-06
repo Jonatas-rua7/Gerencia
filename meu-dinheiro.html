@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meu dinheiro | Gerencia!</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+    <div class="main-wrap">
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="btn-menu" id="btnMenu" type="button">☰</button>
+          <h1 id="tituloMeuDinheiro">Meu dinheiro</h1>
+        </div>
+      </header>
+      <main class="main-content">
+        <div class="card">
+          <h3 class="card-title">Contas e carteiras</h3>
+          <div class="table-wrap"><table><thead><tr><th>Nome</th><th>Tipo</th><th>Saldo atual</th></tr></thead><tbody id="tabelaContas"></tbody></table></div>
+        </div>
+        <div class="card">
+          <h3 class="card-title">Caixinhas <small style="font-weight:400;color:var(--text-muted)">(separação visual — não altera saldo real)</small></h3>
+          <div id="listaCaixinhas"></div>
+          <form id="formCaixinha" style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+            <input type="text" id="nomeCx" placeholder="Nome da caixinha" required style="flex:1;min-width:140px;padding:8px">
+            <input type="number" id="valorCx" placeholder="Valor separado" step="0.01" style="width:120px;padding:8px">
+            <button type="submit" class="btn-primary">Criar</button>
+          </form>
+        </div>
+        <div class="card" id="cardCompromissos">
+          <h3 class="card-title">Compromissos financeiros</h3>
+          <div class="table-wrap"><table><thead><tr><th>Nome</th><th>Parcela</th><th>Status</th></tr></thead><tbody id="tabelaCompromissos"></tbody></table></div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/secrets.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/meu-dinheiro.js"></script>
+</body>
+</html>

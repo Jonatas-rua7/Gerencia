@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agenda financeira | Gerencia!</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+    <div class="main-wrap">
+      <header class="topbar">
+        <div class="page-title-row">
+          <button class="btn-menu" id="btnMenu" type="button">☰</button>
+          <h1>Agenda financeira</h1>
+        </div>
+        <a href="registrar.html" class="btn-primary">+ Registrar</a>
+      </header>
+      <main class="main-content">
+        <p class="subtitle">Previsões e pendências — <strong>não alteram o saldo real</strong> até serem realizadas.</p>
+        <div class="card">
+          <div class="input-group">
+            <label>Filtrar status</label>
+            <select id="filtroStatus">
+              <option value="">Todos os status</option>
+            <option value="pendente">Pendente</option>
+            <option value="atrasado">Atrasado</option>
+            <option value="parcial">Parcial</option>
+            <option value="pago">Pago</option>
+            <option value="recebido">Recebido</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+          </div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Data</th><th>O que foi</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody id="tabela"></tbody>
+          </table></div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/secrets.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/agenda.js"></script>
+</body>
+</html>

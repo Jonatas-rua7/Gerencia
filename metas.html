@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Metas | Gerencia!</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+    <div class="main-wrap">
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="btn-menu" id="btnMenu" type="button">☰</button>
+          <h1>Metas financeiras</h1>
+        </div>
+        <button class="btn-primary" id="btnNovaMeta">+ Nova meta</button>
+      </header>
+      <main class="main-content">
+        <div id="gridMetas" class="stats-grid"></div>
+      </main>
+    </div>
+  </div>
+
+  <div id="modalMeta" class="modal" style="display:none">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Nova meta</h3>
+        <button class="btn-ghost" id="fecharModalMeta">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group">
+          <label>Nome</label>
+          <input type="text" id="metaNome" placeholder="Ex: Viagem para Europa">
+        </div>
+        <div class="input-group">
+          <label>Ícone (emoji)</label>
+          <input type="text" id="metaIcone" placeholder="🎯" maxlength="2" style="width:60px">
+        </div>
+        <div class="input-group">
+          <label>Cor</label>
+          <input type="color" id="metaCor" value="#1F7A3A" style="width:60px;height:40px">
+        </div>
+        <div class="input-group">
+          <label>Valor alvo</label>
+          <input type="number" id="metaValorAlvo" step="0.01" min="0" placeholder="0,00">
+        </div>
+        <div class="input-group">
+          <label>Data limite</label>
+          <input type="date" id="metaDataLimite">
+        </div>
+        <div class="input-group">
+          <label>Descrição (opcional)</label>
+          <textarea id="metaDescricao" rows="2" placeholder="Detalhes sobre a meta..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" id="salvarMeta">Criar meta</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalAporte" class="modal" style="display:none">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Registrar aporte</h3>
+        <button class="btn-ghost" id="fecharModalAporte">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="aporteMetaId">
+        <div class="input-group">
+          <label>Valor</label>
+          <input type="number" id="aporteValor" step="0.01" min="0" placeholder="0,00">
+        </div>
+        <div class="input-group">
+          <label>Data</label>
+          <input type="date" id="aporteData">
+        </div>
+        <div class="input-group">
+          <label>Observação (opcional)</label>
+          <textarea id="aporteObservacao" rows="2" placeholder="Detalhes sobre o aporte..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" id="salvarAporte">Registrar aporte</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/secrets.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/metas.js"></script>
+</body>
+</html>
